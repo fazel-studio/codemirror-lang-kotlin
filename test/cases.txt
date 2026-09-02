@@ -1,0 +1,140 @@
+// Test case 1: Package declaration
+package com.example.name
+
+// Test case 2: Import declarations
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.collections.immutable.*
+
+// Test case 3: Empty class
+class EmptyClass
+
+// Test case 4: Class with primary constructor
+class User(val id: Int, private val name: String)
+
+// Test case 5: Data class
+data class DataUser(val id: Int, val name: String, val tags: List<String> = emptyList())
+
+// Test case 6: Sealed class
+sealed class Result<out T> {
+    data class Success<T>(val data: T) : Result<T>()
+    data class Failure(val message: String) : Result<Nothing>()
+}
+
+// Test case 7: Interface
+interface Repository<T> {
+    suspend fun fetch(id: Int): T?
+}
+
+// Test case 8: Object declaration
+object Singleton {
+    val value = 42
+}
+
+// Test case 9: Companion object
+class MyClass {
+    companion object Factory {
+        fun create() = MyClass()
+    }
+}
+
+// Test case 10: Enum class
+enum class Status { PENDING, ACTIVE, CLOSED }
+
+// Test case 11: Annotation class
+annotation class Auditable
+
+// Test case 12: Annotation usage
+@Auditable
+class AnnotatedClass
+
+// Test case 13: Annotation with use-site target
+@file:JvmName("MyFile")
+
+// Test case 14: Extension function
+fun String.isValidEmail(): Boolean = this.contains("@") && this.contains(".")
+
+// Test case 15: Infix function
+infix fun Int.pow(exponent: Int): Int {
+    var result = 1
+    repeat(exponent) { result *= this }
+    return result
+}
+
+// Test case 16: Single expression function
+fun square(x: Int) = x * x
+
+// Test case 17: Suspend function
+suspend fun fetchData(): String {
+    return "data"
+}
+
+// Test case 18: When expression with subject
+fun describe(x: Int) = when (x) {
+    1 -> "one"
+    in 2..10 -> "small"
+    is Int -> "integer"
+    else -> "other"
+}
+
+// Test case 19: When expression without subject
+fun isPositive(x: Int) = when {
+    x > 0 -> true
+    else -> false
+}
+
+// Test case 20: If expression
+val result = if (true) "yes" else "no"
+
+// Test case 21: For loop
+fun sum(list: List<Int>): Int {
+    var sum = 0
+    for (item in list) {
+        sum += item
+    }
+    return sum
+}
+
+// Test case 22: For loop with destructuring
+fun printPairs(map: Map<String, Int>) {
+    for ((key, value) in map) {
+        println("$key: $value")
+    }
+}
+
+// Test case 23: Lambda trailing syntax
+val doubled = listOf(1, 2, 3).map { it * 2 }
+
+// Test case 24: Lambda with explicit parameter
+val names = listOf(1, 2, 3).map { item -> item.toString() }
+
+// Test case 25: String template simple
+val name = "World"
+val greeting = "Hello, $name!"
+
+// Test case 26: String template expression
+val user = "user"
+val message = "Hello, ${user.uppercase()}!"
+
+// Test case 27: Raw string
+val raw = """
+    This is a raw string
+    with multiple lines
+    and ${1 + 1} expression
+""".trimIndent()
+
+// Test case 28: Null safety
+fun process(input: String?): String {
+    val length = input?.length ?: 0
+    val upper = input!!.uppercase()
+    return upper
+}
+
+// Test case 29: Range expression
+val range1 = 1..10
+val range2 = 1 until 10
+val range3 = 10 downTo 1
+
+// Test case 30: Destructuring
+val pair = Pair(1, "one")
+val (num, text) = pair

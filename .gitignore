@@ -1,0 +1,9 @@
+node_modules/
+modules/
+dist/
+src/parser.js
+src/parser.terms.js
+src/parser.table.js
+*.log
+.DS_Store
+*.tgz

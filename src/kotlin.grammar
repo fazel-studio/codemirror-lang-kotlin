@@ -1,0 +1,273 @@
+@precedence {
+  else @right
+  catch @left
+  finally @left
+
+  functionType @right
+  nullable @left
+
+  type @left
+  typeArgs @left
+
+  modifier @left
+  expr @left
+
+  postfix @left
+  objectLiteral @left
+  prefix @left
+  cast @left
+  multiplicative @left
+  additive @left
+  range @left
+  elvis @left
+  infix @left
+  namedInfix @left
+  equality @left
+  comparison @left
+  conjunction @left
+  disjunction @left
+  assignment @right
+
+  property @right
+  decl @right
+  ImportPath @left
+  importPath @left
+  jump @right
+  namedArg @left
+  call @left
+  lambda @left
+  whenEntry @left
+}
+
+@skip { spaces | LineComment | BlockComment | KDocComment }
+
+@top KotlinFile { (statement ";"?)* }
+
+statement {
+  PackageHeader | Import | !decl Declaration |
+  !property PropertyDeclaration | Expression
+}
+
+PackageHeader { kw<"package"> ImportPath }
+Import { kw<"import"> ImportIdentifier ImportAlias? }
+ImportIdentifier { Identifier | ImportIdentifier "." Identifier | ImportIdentifier "." Star }
+ImportAlias { kw<"as"> Identifier }
+ImportPath { Identifier | ImportPath !ImportPath "." Identifier }
+
+Declaration {
+  ClassDeclaration |
+  InterfaceDeclaration |
+  ObjectDeclaration |
+  FunctionDeclaration |
+  CompanionObject |
+  AnnotationDeclaration
+}
+
+AnnotationDeclaration { Modifiers kw<"annotation"> kw<"class"> Identifier (!decl ClassBody)? }
+
+ClassDeclaration { Modifiers kw<"class"> Identifier TypeParameters? (!decl PrimaryConstructor)? Supertype? (!decl ClassBody)? }
+InterfaceDeclaration { Modifiers kw<"interface"> Identifier TypeParameters? Supertype? (!decl ClassBody)? }
+ObjectDeclaration { Modifiers kw<"object"> Identifier Supertype? (!decl ClassBody)? }
+CompanionObject { Modifiers kw<"companion"> kw<"object"> (!decl Identifier)? Supertype? (!decl ClassBody)? }
+
+Supertype { ":" SupertypeEntry ("," SupertypeEntry)* }
+SupertypeEntry { Type (!decl "(" ArgumentList? ")")? }
+
+ClassBody { "{" (ClassMember ";"?)* "}" }
+ClassMember {
+  FunctionDeclaration |
+  PropertyDeclaration |
+  ClassDeclaration |
+  InterfaceDeclaration |
+  ObjectDeclaration |
+  CompanionObject |
+  AnnotationDeclaration |
+  SecondaryConstructor |
+  InitializerBlock |
+  EnumEntry
+}
+
+EnumEntry { AnnotationUsage* Identifier ("(" ArgumentList? ")")? ClassBody? ","? }
+
+SecondaryConstructor { Modifiers kw<"constructor"> "(" ParameterList? ")" (":" ConstructorDelegation)? Block? }
+ConstructorDelegation { kw<"this"> "(" ArgumentList? ")" | kw<"super"> "(" ArgumentList? ")" }
+PrimaryConstructor { Modifiers (kw<"constructor">)? "(" ParameterList? ")" }
+InitializerBlock { kw<"init"> Block }
+
+Modifiers { Modifier* }
+Modifier {
+  kw<"public"> | kw<"private"> | kw<"protected"> | kw<"internal"> |
+  kw<"open"> | kw<"abstract"> | kw<"final"> | kw<"override"> |
+  kw<"sealed"> | kw<"data"> | kw<"inner"> | kw<"value"> |
+  kw<"suspend"> | kw<"inline"> | kw<"infix"> | kw<"operator"> |
+  kw<"tailrec"> | kw<"external"> | kw<"const"> | kw<"lateinit"> |
+  kw<"vararg"> | kw<"noinline"> | kw<"crossinline"> | kw<"reified"> |
+  kw<"expect"> | kw<"actual"> | kw<"enum"> |
+  !modifier AnnotationUsage
+}
+
+ParameterList { Parameter ("," Parameter)* ","? }
+Parameter { Modifiers (kw<"val"> | kw<"var">)? Identifier ":" Type ("=" Expression)? }
+
+Type { NullableType | TypeNoQ }
+TypeNoQ { FunctionType | SimpleType | ParenthesizedType }
+SimpleType { TypeReference }
+NullableType { TypeNoQ !nullable "?" }
+ParenthesizedType { "(" Type ")" }
+FunctionType { (TypeReference !type ".")? "(" FunctionTypeParameters? ")" "->" Type !functionType }
+
+FunctionTypeParameters { FunctionTypeParameter ("," FunctionTypeParameter)* }
+FunctionTypeParameter { (Identifier ":")? Type !type }
+
+TypeParameter { Modifiers (kw<"in"> | kw<"out">)? Identifier (":" Type)? }
+TypeParameters { "<" TypeParameter ("," TypeParameter)* ">" }
+TypeArgument { Type | Star | kw<"in"> Type | kw<"out"> Type }
+TypeReference { ImportPath (!typeArgs "<" TypeArgument ("," TypeArgument)* ">")? }
+
+PropertyDeclaration { Modifiers (kw<"val"> | kw<"var">) TypeParameters? Binding PropertyDelegate? ("=" Expression)? PropertyAccessors? !property }
+PropertyDelegate { kw<"by"> Expression }
+PropertyAccessors { PropertyGetter PropertySetter? | PropertySetter PropertyGetter? }
+PropertyGetter { kw<"get"> (!property "(" ")" (":" Type)? FunctionBody)? }
+PropertySetter { kw<"set"> (!property "(" Identifier (":" Type)? ")" (":" Type)? FunctionBody)? }
+
+Binding { Identifier (":" Type)? | "(" Binding ("," Binding)* ")" }
+
+FunctionDeclaration { Modifiers kw<"fun"> TypeParameters? (~funcName ImportPath | ~funcName TypeReference "." Identifier) FunctionValueParameters (":" Type)? (!decl FunctionBody)? }
+FunctionValueParameters { "(" ParameterList? ")" }
+FunctionBody { "=" Expression | Block }
+Block { "{" (Statement ";"?)* "}" }
+Statement { !decl Declaration | !property PropertyDeclaration | Expression }
+
+Expression { AssignmentExpression }
+AssignmentExpression { SimpleExpression | SimpleExpression !assignment ("=" | "+=" | "-=" | "*=" | "/=" | "%=") Expression }
+SimpleExpression { DisjunctionExpression }
+DisjunctionExpression { ConjunctionExpression | DisjunctionExpression !disjunction "||" ConjunctionExpression }
+ConjunctionExpression { ComparisonExpression | ConjunctionExpression !conjunction "&&" ComparisonExpression }
+ComparisonExpression { EqualityExpression | ComparisonExpression !comparison ("<" | ">" | "<=" | ">=") EqualityExpression }
+EqualityExpression { NamedInfixExpression | EqualityExpression !equality ("==" | "!=" | "===" | "!==") NamedInfixExpression }
+NamedInfixExpression { InfixFunctionCallExpression | NamedInfixExpression !namedInfix Identifier InfixFunctionCallExpression }
+InfixFunctionCallExpression { ElvisExpression | InfixFunctionCallExpression !infix (kw<"in"> | NotIn | kw<"is"> | NotIs) ElvisExpression }
+ElvisExpression { RangeExpression | ElvisExpression !elvis "?:" RangeExpression }
+RangeExpression { AdditiveExpression | RangeExpression !range ".." AdditiveExpression }
+AdditiveExpression { MultiplicativeExpression | AdditiveExpression !additive ("+" | "-") MultiplicativeExpression }
+MultiplicativeExpression { CastExpression | MultiplicativeExpression !multiplicative (Star | "/" | "%") CastExpression }
+CastExpression { PrefixExpression | CastExpression !cast (kw<"as"> | kw<"as?">) Type }
+PrefixExpression { !prefix ("-" | "+" | "!" | "++" | "--") PrefixExpression | PostfixExpression }
+PostfixExpression { PrimaryExpression | PostfixExpression !postfix PostfixOperator }
+
+PostfixOperator { "." Identifier | "?." Identifier | "!!" | "(" ArgumentList? ")" | "[" ExpressionList? "]" | Label* LambdaExpression | Label* Block | "++" | "--" }
+
+PrimaryExpression {
+  ObjectLiteral |
+  Identifier |
+  Literal |
+  kw<"this"> |
+  kw<"super"> (!typeArgs "<" Identifier ">")? |
+  ParenthesizedExpression |
+  Label* LambdaExpression |
+  CollectionLiteral |
+  WhenExpression |
+  IfExpression |
+  TryExpression |
+  Label* ForExpression |
+  Label* WhileExpression |
+  Label* DoWhileExpression |
+  JumpExpression |
+  !expr AnnotationUsage
+}
+
+ParenthesizedExpression { "(" Expression ")" }
+LambdaExpression { "{" !lambda LambdaParams "->" Statement* "}" }
+LambdaParams { LambdaParam ("," LambdaParam)* | Identifier ("," Identifier)* | DestructuredParam }
+DestructuredParam { "(" Identifier "," Identifier ("," Identifier)* ")" }
+LambdaParam { Identifier ":" Type }
+CollectionLiteral { "[" ExpressionList? "]" }
+ExpressionList { Expression ("," Expression)* ","? }
+
+WhenExpression { kw<"when"> ("(" Expression ")")? WhenBody }
+WhenBody { "{" WhenEntry* "}" }
+WhenEntry { WhenCondition "->" WhenEntryBody | kw<"else"> "->" WhenEntryBody }
+WhenEntryBody { Block | Expression !whenEntry ";"? }
+WhenCondition { Expression !whenEntry | kw<"in"> Expression !whenEntry | NotIn Expression !whenEntry | kw<"is"> Type !whenEntry | NotIs Type !whenEntry }
+
+IfExpression { kw<"if"> "(" Expression ")" (Block | Expression) (!else kw<"else"> (Block | Expression))? }
+
+TryExpression { kw<"try"> Block CatchClause* FinallyClause? }
+CatchClause { !catch kw<"catch"> "(" Identifier ":" Type ")" Block }
+FinallyClause { !finally kw<"finally"> Block }
+
+ForExpression { kw<"for"> "(" Binding kw<"in"> Expression ")" Block }
+WhileExpression { kw<"while"> "(" Expression ")" Block }
+DoWhileExpression { kw<"do"> Block kw<"while"> "(" Expression ")" }
+
+JumpExpression {
+  ReturnAt (!jump Expression)? |
+  kw<"return"> (!jump Expression)? |
+  BreakAt |
+  kw<"break"> |
+  ContinueAt |
+  kw<"continue"> |
+  kw<"throw"> Expression
+}
+
+ObjectLiteral { kw<"object"> !objectLiteral (":" SupertypeEntry ("," SupertypeEntry)*)? ClassBody }
+
+AnnotationUsage { "@" AnnotationTarget? ImportPath (!call "(" AnnotationArgumentList? ")")? }
+AnnotationTarget { kw<"file"> ":" | kw<"field"> ":" | kw<"get"> ":" | kw<"set"> ":" | kw<"param"> ":" | kw<"setparam"> ":" | kw<"delegate"> ":" }
+AnnotationArgumentList { AnnotationArgument ("," AnnotationArgument)* ","? }
+AnnotationArgument { Expression }
+
+Literal { NumberLiteral | BooleanLiteral | NullLiteral | CharLiteral | StringLiteral | RawStringLiteral }
+BooleanLiteral { kw<"true"> | kw<"false"> }
+NullLiteral { kw<"null"> }
+
+@external tokens stringStart from "./tokens.js" { stringQuote, rawStringStart }
+@external tokens stringContent from "./tokens.js" { StringText, TemplateVar, templateOpen }
+@external tokens rawStringContent from "./tokens.js" { RawStringText, rawStringEnd }
+
+StringLiteral { stringQuote (StringText | TemplateVar | TemplateExpr)* stringQuote }
+RawStringLiteral { rawStringStart (RawStringText | TemplateVar | TemplateExpr)* rawStringEnd }
+TemplateExpr { templateOpen Expression "}" }
+
+ArgumentList { Argument ("," Argument)* ","? }
+Argument { !namedArg Identifier ":" Expression | Expression }
+
+kw<term> { @extend[@name={term}]<Identifier, term> }
+@tokens {
+  spaces { $[ \t\n\r]+ }
+
+  LineComment { "//" ![\n]* }
+
+  KDocComment { "/**" kdocTail }
+  kdocTail { ![*] kdocTail | "*" kdocAfterStar }
+  kdocAfterStar { "/" | "*" kdocAfterStar | ![*/] kdocTail }
+
+  blockCommentRest { ![*] blockCommentRest | "*" blockCommentAfterStar }
+  blockCommentAfterStar { "/" | "*" blockCommentAfterStar | ![*/] blockCommentRest }
+  BlockComment { "/*" blockCommentRest }
+
+  CharLiteral { "'" ("\\" _ | $[^'\\]) "'" }
+
+  NumberLiteral {
+    ( $[0-9]+ ("_" $[0-9]+)* ("." $[0-9]+ ("_" $[0-9]+)*)? ($[eE] $[+\-]? $[0-9]+ ("_" $[0-9]+)*)? |
+      "0" $[xX] $[0-9a-fA-F]+ ("_" $[0-9a-fA-F]+)* |
+      "0" $[bB] $[01]+ ("_" $[01]+)*
+    ) ($[uU] $[lL]? | $[uU]? $[lL])?
+  }
+
+  Star { "*" }
+
+  NotIn { "!in" }
+  NotIs { "!is" }
+
+  ReturnAt { "return@" $[a-zA-Z_] $[a-zA-Z0-9_]* }
+  ContinueAt { "continue@" $[a-zA-Z_] $[a-zA-Z0-9_]* }
+  BreakAt { "break@" $[a-zA-Z_] $[a-zA-Z0-9_]* }
+  Label { $[a-zA-Z_] $[a-zA-Z0-9_]* "@" }
+  Identifier { $[a-zA-Z_] $[a-zA-Z0-9_]* }
+
+  @precedence { NotIn, NotIs, "!" }
+  @precedence { ReturnAt, ContinueAt, BreakAt, Label, Identifier }
+  @precedence { LineComment, BlockComment, KDocComment, "/" }
+  @precedence { LineComment, BlockComment, KDocComment, Star }
+}
